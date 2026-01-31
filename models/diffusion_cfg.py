@@ -12,7 +12,7 @@ def gather(k, t, x_shape):
     return out
 
 class DdpmTrainerCFG(nn.Module):
-    def __init__(self, total_steps=1000, beta_start=1e-4, beta_end=0.02, model=None):
+    def __init__(self, total_steps=50, beta_start=1e-4, beta_end=0.02, model=None):
         # 默认beta设置与DDPM论文一致
         super().__init__()
         self.total_steps = total_steps
@@ -37,19 +37,21 @@ class DdpmTrainerCFG(nn.Module):
             + gather(self.sqrt_one_minus_alpha_bar, t, x_0.shape) * z
         loss = F.mse_loss(self.model(x_t, t, condition), z, reduction='none')
         # loss.shape = [batch, channels, height, width]
-        return loss.sum() / self.total_steps
+        return loss
 
 class DdpmSamplerCFG(nn.Module):
-    def __init__(self, total_step=1000, beta_start=1e-4, beta_end=0.02, model=None, cfg_scale=3.0):
+    def __init__(self, total_step=50, beta_start=1e-4, beta_end=0.02, model=None, guide_scale=3.0):
         super().__init__()
         self.total_steps = total_step
         self.model = model
+        self.guide_scale = guide_scale
         self.betas = torch.linspace(beta_start, beta_end, self.total_steps).float()
         self.alphas = 1.0 - self.betas.float()
         self.alpha_bar = torch.cumprod(self.alphas, dim=0).float()
         self.one_minus_alpha_bar = 1.0 - self.alpha_bar.float()
         self.sqrt_alpha_bar = torch.sqrt(self.alpha_bar).float()
         self.sqrt_one_minus_alpha_bar = torch.sqrt(self.one_minus_alpha_bar).float()
+
         
         self.register_buffer('alphas_rsqrt', torch.rsqrt(self.alphas))
         self.register_buffer('betas_over_sqrt_one_minus_alpha_bar', self.betas / self.sqrt_one_minus_alpha_bar)    
@@ -71,11 +73,19 @@ class DdpmSamplerCFG(nn.Module):
     def forward(self, x_t, condition):
         # 逆向采样过程
         assert x_t.shape[0] == condition.shape[0]
+        non_condition = torch.zeros_like(condition).to(condition.device)
+
         x_prev = x_t
         for cur_step in tqdm(reversed(range(self.total_steps)), desc="采样进度", total=self.total_steps,#999-0
                              bar_format='{desc}: {n_fmt}/{total_fmt} |{bar}| {percentage:3.0f}%'): 
+            
             t = x_t.new_ones([x_t.shape[0],], dtype=torch.long) * cur_step
-            pred_noise = self.model(x_prev, t, condition)
+
+            # classifier-free guidance
+            pred_noise_nc = self.model(x_prev, t, non_condition) 
+            pred_noise_c = self.model(x_prev, t, condition)
+            pred_noise = pred_noise_nc + self.guide_scale * (pred_noise_c - pred_noise_nc)
+
             x_prev = self.step_once(x_prev, t, pred_noise)
         x_0 = x_prev
         return x_0

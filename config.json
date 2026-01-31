@@ -1,0 +1,23 @@
+{
+    "train_config":{
+        "lr": 1e-4,
+        "epoch": 70,
+        "batch_size": 32,
+        "multiplier":2.0,
+        "device": "cuda:0",
+        "grad_clip":1.0,
+        "ckpt_save_dir":"./ckpt"
+    },
+
+    "model_config":{
+        "total_steps": 500,
+        "cond_size": 100,
+        "channel": 128,
+        "channel_mult": [1, 2, 2, 2],
+        "num_res_blocks": 3,
+        "dropout": 0.2,
+        "beta_start": 1e-4,
+        "beta_end": 0.03,
+        "guide_scale":2.0
+    }
+}
