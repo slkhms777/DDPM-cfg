@@ -5,6 +5,8 @@ from models import *
 from utils import *
 import os
 from torchvision.utils import save_image
+import re
+from pathlib import Path
 
 def sample_once(cfg):
     # 模型配置
@@ -27,13 +29,23 @@ def sample_once(cfg):
     # 模型
     model = UNet(T=total_steps, cond_size=cond_size, ch=channel, ch_mult=channel_mult,
                  num_res_blocks=num_res_blocks, dropout=dropout).to(device)
-    # 加载模型权重，加载最新的ckpt，以字典序排列
-    ckpts = os.listdir(ckpt_save_dir)
-    latest_ckpt = sorted(ckpts)[-1]
-    print(f"Loading checkpoint: {latest_ckpt}")
+    
+    # 加载模型权重，加载最新的ckpt(*.pth)，以字典序排列，glob返回的是路径而不是文件名
+    ckpts = list(Path(ckpt_save_dir).glob("epoch_*.pth")) 
 
-    ckpt = torch.load(f"{ckpt_save_dir}/{latest_ckpt}", map_location=device)
-    model.load_state_dict(ckpt["model"])
+    def extract_epoch(path: Path):
+        # 去除后缀名
+        path_name = str(path.stem)
+        return int(path_name.split("_")[1])
+    
+    ckpts = sorted(ckpts, key=extract_epoch)
+    latest_ckpt = ckpts[-1]
+    # print(ckpt_save_dir) # ./ckpt
+    print(latest_ckpt) # ckpt/epoch_69.pth
+    print(f"Loading checkpoint from : {latest_ckpt}")
+    
+    ckpt = torch.load(f"{latest_ckpt}", map_location=device)
+    model.load_state_dict(ckpt)
     model 
     # 采样器
     sampler = DdpmSamplerCFG(total_step=total_steps, beta_start=beta_start, 
@@ -41,18 +53,19 @@ def sample_once(cfg):
 
     save_dir = "sampled_images"
     os.makedirs(save_dir, exist_ok=True)
-    for i in range(10):
-        # 采样
-        all_samples = []
-        for j in range(10):
-            labels = torch.arange(0, 10).long().to(device) + 1 + i * 10  # 标签从1开始
-            batch_size = labels.shape[0]
-            x_t = torch.randn(batch_size, 3, 64, 64).to(device)
-            samples = sampler(x_t, labels)
-            samples = samples.clamp(-1, 1) * 0.5 + 0.5  # [-1,1] -> [0,1]
-            all_samples.append(samples.cpu())
-        all_samples = torch.cat(all_samples, dim=0)  # [100, 3, 64, 64]
-        save_image(all_samples, f"{save_dir}/class_{i+1}_to_{i+10}.png", nrow=10)
+    with torch.no_grad():
+        for i in range(10):
+            # 采样
+            all_samples = []
+            for j in range(10):
+                labels = torch.arange(0, 10).long().to(device) + 1 + i * 10  # 标签从1开始
+                batch_size = labels.shape[0]
+                x_t = torch.randn(batch_size, 3, 64, 64).to(device)
+                samples = sampler(x_t, labels)
+                samples = samples.clamp(-1, 1) * 0.5 + 0.5  # [-1,1] -> [0,1]
+                all_samples.append(samples.cpu())
+            all_samples = torch.cat(all_samples, dim=0)  # [100, 3, 64, 64]
+            save_image(all_samples, f"{save_dir}/class_{i+1}_to_{i+10}.png", nrow=10)
     
 
 if __name__ == '__main__':

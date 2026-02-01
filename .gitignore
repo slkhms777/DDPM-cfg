@@ -10,7 +10,12 @@ wheels/
 .venv
 
 
-datasets/
-!datasets/.gitkeep
-ckpt/
+datasets/*
+sampled_images/*
+ckpt/*
 *.zip
+
+# keep
+!datasets/.gitkeep
+!ckpt/.gitkeep
+!sampled_images/.gitkeep
