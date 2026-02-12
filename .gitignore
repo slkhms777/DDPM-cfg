@@ -13,9 +13,14 @@ wheels/
 datasets/*
 sampled_images/*
 ckpt/*
+ckpt_aniaml/*
+ckpt_tinyimagenet/*
+outputs/*
+logs/*
 *.zip
 
 # keep
 !datasets/.gitkeep
 !ckpt/.gitkeep
 !sampled_images/.gitkeep
+

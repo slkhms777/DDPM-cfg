@@ -1,0 +1,4 @@
+_target_: torch.optim.AdamW
+# _partial_: true   # 参数延迟初始化
+lr: 5e-5
+weight_decay: 1e-4

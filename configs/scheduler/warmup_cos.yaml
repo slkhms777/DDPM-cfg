@@ -1,0 +1,14 @@
+
+cosine_scheduler:
+  _target_: torch.optim.lr_scheduler.CosineAnnealingLR
+  # _partial_: true
+  T_max: ${train.epoch}
+  eta_min: 0
+  last_epoch: -1
+
+warmup_scheduler:
+  _target_: utils.WarmupScheduler
+  multiplier: 2.0
+  warm_epoch: 7   #  epoch // 10
+  
+  

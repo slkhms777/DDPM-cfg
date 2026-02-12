@@ -1,0 +1,44 @@
+defaults:
+  # - dataloader: animal_faces
+  - dataloader/tiny_imagenet
+  - optimizer/AdamW
+  - scheduler/warmup_cos
+  - _self_
+
+seed: 20
+
+train:
+  gpus: 4
+  epoch: 70
+  grad_clip: 1.0
+  accum_steps: 4
+  # ckpt_save_dir: "./ckpt_aniaml"
+  ckpt_save_dir: "./ckpt_tinyimagenet"
+  
+UNet:
+  _target_: models.UNet
+  # T, cond_size, ch, ch_mult, num_res_blocks, dropout
+  T: 500
+  cond_size: 200
+  ch: 128
+  ch_mult: [1, 2, 2, 2, 2]
+  num_res_blocks: 3
+  dropout: 0.2
+
+diffusion:
+  total_steps: ${UNet.T}
+  beta_start: 1e-4
+  beta_end: 0.03
+  trainer:
+    _target_: models.DdpmTrainerCFG
+    total_steps: ${diffusion.total_steps}
+    beta_start: ${diffusion.beta_start}
+    beta_end: ${diffusion.beta_end}
+    # _partial_: true  # 传入model即UNet
+  sampler:
+    _target_: models.DdpmSamplerCFG
+    total_steps: ${diffusion.total_steps}
+    beta_start: ${diffusion.beta_start}
+    beta_end: ${diffusion.beta_end}
+    # _partial_: true  # 传入model即UNet
+    guide_scale: 2.0

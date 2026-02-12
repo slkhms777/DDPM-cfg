@@ -1,0 +1,6 @@
+_target_: utils.get_TinyImageNet_dataloader
+
+batch_size: 2
+target_size: 128
+num_workers: 4
+parquet_path: "datasets/TinyImageNet/train.parquet"

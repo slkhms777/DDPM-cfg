@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import numpy as np
 from tqdm import tqdm
 
 def gather(k, t, x_shape):
@@ -40,9 +39,9 @@ class DdpmTrainerCFG(nn.Module):
         return loss
 
 class DdpmSamplerCFG(nn.Module):
-    def __init__(self, total_step=50, beta_start=1e-4, beta_end=0.02, model=None, guide_scale=3.0):
+    def __init__(self, total_steps=50, beta_start=1e-4, beta_end=0.02, model=None, guide_scale=3.0):
         super().__init__()
-        self.total_steps = total_step
+        self.total_steps = total_steps
         self.model = model
         self.guide_scale = guide_scale
         self.betas = torch.linspace(beta_start, beta_end, self.total_steps).float()
