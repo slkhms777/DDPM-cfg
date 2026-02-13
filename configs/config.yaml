@@ -1,27 +1,31 @@
 defaults:
   # - dataloader: animal_faces
-  - dataloader/tiny_imagenet
+  - dataloader/mini_imagenet
   - optimizer/AdamW
   - scheduler/warmup_cos
   - _self_
 
 seed: 20
+mode: 
+  train: false
+inference:
+  save_dir: "./sampled_images"
 
 train:
-  gpus: 4
+  gpus: 2
   epoch: 70
   grad_clip: 1.0
   accum_steps: 4
   # ckpt_save_dir: "./ckpt_aniaml"
-  ckpt_save_dir: "./ckpt_tinyimagenet"
+  ckpt_save_dir: "./ckpt"
   
 UNet:
   _target_: models.UNet
   # T, cond_size, ch, ch_mult, num_res_blocks, dropout
   T: 500
-  cond_size: 200
+  cond_size: 100
   ch: 128
-  ch_mult: [1, 2, 2, 2, 2]
+  ch_mult: [1, 2, 2, 2]
   num_res_blocks: 3
   dropout: 0.2
 

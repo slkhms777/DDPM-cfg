@@ -1,0 +1,7 @@
+# get_miniImageNet_dataloader(batch_size, target_size=64, num_workers=4, root="datasets/mini_imagenet"):
+_target_: utils.get_miniImageNet_dataloader
+
+batch_size: 32
+target_size: 64
+num_workers: 4
+root: "datasets/mini_imagenet"

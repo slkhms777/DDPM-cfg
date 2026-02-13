@@ -1,6 +1,0 @@
-_target_: utils.get_AnimalFaces_dataloader
-
-batch_size: 2
-target_size: 128
-num_workers: 4
-root: "datasets/animal_faces"

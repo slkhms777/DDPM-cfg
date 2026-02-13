@@ -6,17 +6,16 @@
 
 已完成：
 - ✅ v1 版本（底层手搓实现）
+- ✅ v2 版本（Lightning、loguru、Hydra）
 
 待办：
-- ⬜ 现代化工程封装（PyTorch Lightning、日志系统、Hydra 配置管理）
 - ⬜ 其他质量更好的数据集
 
 ## 目录结构
 
 ```
-├── train.py              # 训练入口
-├── sample.py             # 采样脚本
-├── config.json           # 配置文件
+├── main.py               # 训练和推理入口
+├── configs/              # 配置文件目录（Hydra）
 ├── models/               # 模型定义（UNet、Diffusion CFG）
 ├── utils/                # 工具函数（数据加载、噪声调度器）
 ├── datasets/             # 数据集目录
@@ -47,22 +46,22 @@ uv sync
 
 2. **修改配置**（可选）
 
-   编辑 `config.json` 调整训练参数与模型配置。
+   编辑 `configs/config.yaml` 调整训练参数与模型配置。
 
 3. **训练模型**
 
    ```bash
-   uv run train.py
+   uv run main.py mode.train=true
    ```
 
 4. **采样生成**
 
    ```bash
-   uv run sample.py
+   uv run main.py mode.train=false 
    ```
-   
-   生成结果保存于 `sampled_images/` 目录：
+   生成结果保存在 `sampled_images/` 目录下
 
+   结果示例：
    ![class_1_to_10](assets/class_1_to_10.png)
 
 ## 参考

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-mini_imageNet_url="https://dataset-hub.oss-cn-hangzhou.aliyuncs.com/public-unzip-dataset/tany0699/mini_imagenet100/master/train.zip?Expires=1770001932&OSSAccessKeyId=LTAI5tAoCEDFQFyV5h8unjt8&Signature=EiO%2BiIYqC8Ueiy%2FGeUWs5GeLgfs%3D&response-content-disposition=attachment%3B"
+mini_imageNet_url="https://dataset-hub.oss-cn-hangzhou.aliyuncs.com/public-unzip-dataset/tany0699/mini_imagenet100/master/train.zip?Expires=1771013796&OSSAccessKeyId=LTAI5tAoCEDFQFyV5h8unjt8&Signature=7TCCzm5ITwEegO%2BYGn%2F8HqlfbQM%3D&response-content-disposition=attachment%3B"
 
 # 1. 下载train.zip数据
 echo "Downloading train.zip..."

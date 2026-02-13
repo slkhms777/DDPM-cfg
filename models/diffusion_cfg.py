@@ -22,6 +22,19 @@ class DdpmTrainerCFG(nn.Module):
         self.one_minus_alpha_bar = 1.0 - self.alpha_bar.float()
         self.register_buffer('sqrt_alpha_bar', torch.sqrt(self.alpha_bar).float())
         self.register_buffer('sqrt_one_minus_alpha_bar', torch.sqrt(self.one_minus_alpha_bar).float())
+    
+    def state_dict(self, *args, **kwargs):
+        # 排除 model，只保存 buffer 和参数
+        state = super().state_dict(*args, **kwargs)
+        # 获取 prefix（通常为空字符串或模块名前缀）
+        prefix = kwargs.get('prefix', '')
+        if args and len(args) >= 2:
+            prefix = args[1]
+        # 移除所有 model. 开头的键
+        keys_to_remove = [k for k in state.keys() if k.startswith(prefix + 'model.')]
+        for key in keys_to_remove:
+            del state[key]
+        return state
 
     def forward(self, x_0, condition):
         # 输入原始图像，返回加噪t步的噪声图像和噪声
@@ -56,6 +69,19 @@ class DdpmSamplerCFG(nn.Module):
         self.register_buffer('betas_over_sqrt_one_minus_alpha_bar', self.betas / self.sqrt_one_minus_alpha_bar)    
         self.register_buffer('sigma_2', self.betas * \
                              F.pad(self.one_minus_alpha_bar[:-1], (1,0), value=0) / self.one_minus_alpha_bar)
+    
+    def state_dict(self, *args, **kwargs):
+        # 排除 model，只保存 buffer 和参数
+        state = super().state_dict(*args, **kwargs)
+        # 获取 prefix（通常为空字符串或模块名前缀）
+        prefix = kwargs.get('prefix', '')
+        if args and len(args) >= 2:
+            prefix = args[1]
+        # 移除所有 model. 开头的键
+        keys_to_remove = [k for k in state.keys() if k.startswith(prefix + 'model.')]
+        for key in keys_to_remove:
+            del state[key]
+        return state
 
     def get_mu_sigma(self, x_t, t, pred_noise):
         mu = gather(self.alphas_rsqrt, t, x_t.shape) \

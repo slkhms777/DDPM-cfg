@@ -47,7 +47,7 @@ class LitDdpmCfg(pl.LightningModule):
         if torch.rand(1).item() < 0.1:
             # 10% 概率下不进行条件引导
             labels = torch.zeros_like(labels)
-        loss = self.ddpm_trainer(images, labels).sum() / 10000.0
+        loss = self.ddpm_trainer(images, labels).mean()
         # 记录到 Lightning 的日志系统（会显示在进度条）
         self.log("train_loss", loss, prog_bar=True, on_step=True, on_epoch=True, sync_dist=True)
         # 每 100 个 batch 记录一次详细信息
@@ -85,17 +85,35 @@ class LitDdpmCfg(pl.LightningModule):
         ckpt_save_dir = self.args.train.ckpt_save_dir
         img_save_dir = os.path.join(ckpt_save_dir, "eval_images")
         os.makedirs(img_save_dir, exist_ok=True)
-        batch_size = 4
-        x_t = torch.randn(batch_size, 3, 128, 128, device=self.device)
-        # 0,1,2,2
-        # labels = torch.tensor([0, 1, 2, 2], device=self.device).long() + 1
-        labels = torch.randint(0,200,size=[4,],device=self.device).long() + 1
+        batch_size = 16
+        img_sz = self.args.dataloader.target_size
+        x_t = torch.randn(batch_size, 3, img_sz, img_sz, device=self.device)
+        labels = torch.randint(0,100,size=[batch_size,],device=self.device).long() + 1
         samples = self.ddpm_sampler(x_t, labels).clamp(-1, 1)
         samples = samples * 0.5 + 0.5  # [-1, 1] -> [0, 1]
         save_path = os.path.join(img_save_dir, f"epoch_{epoch+1:02d}.png")
-        save_image(samples, save_path, nrow=2)
+        save_image(samples, save_path, nrow=4)
         logger.info(f"采样图像已保存至 {save_path}")
         self.model.train()  # 恢复训练模式
+        
+    @torch.no_grad()
+    def inference(self, labels, ckpt_path):
+        ckpt = torch.load(ckpt_path, map_location=self.device, weights_only=False)
+        # 提取 model. 开头的键，并移除前缀
+        state_dict = {}
+        for k, v in ckpt['state_dict'].items():
+            if k.startswith('model.'):
+                new_key = k[6:]  # 移除 'model.' 前缀
+                state_dict[new_key] = v
+        self.model.load_state_dict(state_dict, strict=False)
+        self.model.eval()
+        labels = labels.to(self.device).long() + 1
+        batch_size = labels.size(0)
+        sz = self.args.dataloader.target_size
+        x_t = torch.randn(batch_size, 3, sz, sz, device=self.device)
+        samples = self.ddpm_sampler(x_t, labels).clamp(-1, 1)
+        samples = samples * 0.5 + 0.5  # [-1, 1] -> [0, 1]
+        return samples
 
 
 @hydra.main(config_path="configs", config_name="config", version_base=None)
@@ -103,37 +121,53 @@ def main(args: DictConfig) -> None:
     # 设置全局随机种子
     logger.info("🎯 设置随机种子...")
     pl.seed_everything(args.seed, workers=True)
+    
     # 先训练
     logger.info("🔧 创建Lightning模型...")
     LitModel = LitDdpmCfg(args)
-    logger.info("⚙️  配置Trainer训练器...")
-    trainer = pl.Trainer(
-        max_epochs=args.train.epoch,               # 70
-        accelerator="gpu",                         # 使用 GPU
-        devices=args.train.gpus,                   # 双卡训练（Animal Faces 数据集较小）
-        precision="32",                            # 32 位精度
-        gradient_clip_val=args.train.grad_clip,    # 1.0
-        default_root_dir=args.train.ckpt_save_dir, # "./ckpt_aniaml"
-        accumulate_grad_batches=args.train.accum_steps, # 梯度累积
-        log_every_n_steps=10,                      # 每 10 步记录一次日志
-        enable_checkpointing=True,                 # 启用检查点保存
-        callbacks=[
-            pl.callbacks.ModelCheckpoint(
-                dirpath=args.train.ckpt_save_dir,
-                filename='epoch_{epoch:02d}',
-                every_n_epochs=1,                  # 每个 epoch 保存
-                save_top_k=-1,                     # 保存所有检查点
-            )
-        ]
-    )
-    logger.info("📦 加载数据集...")
-    dataset, dataloader = instantiate(args.dataloader)
-    logger.info(f"数据集大小: {len(dataset)} 张图片")
-
-    logger.info("🏃 开始训练...")
-    trainer.fit(LitModel, train_dataloaders=dataloader)
-    logger.success("🎉 训练完成！")
+    if args.mode.train:
+        logger.info("⚙️  配置Trainer训练器...")
+        trainer = pl.Trainer(
+            max_epochs=args.train.epoch,               # 70
+            accelerator="gpu",                         # 使用 GPU
+            devices=args.train.gpus,                   # 多卡训练
+            precision="32",                            # 32 位精度
+            gradient_clip_val=args.train.grad_clip,    # 1.0
+            default_root_dir=args.train.ckpt_save_dir, # "./ckpt_aniaml"
+            accumulate_grad_batches=args.train.accum_steps, # 梯度累积
+            log_every_n_steps=10,                      # 每 10 步记录一次日志
+            enable_checkpointing=True,                 # 启用检查点保存
+            callbacks=[
+                pl.callbacks.ModelCheckpoint(
+                    dirpath=args.train.ckpt_save_dir,
+                    filename='ckpt_epoch_{epoch:02d}',
+                    auto_insert_metric_name=False,
+                    every_n_epochs=5,                  # 每5个 epoch 保存
+                    save_top_k=-1,                     # 保存所有检查点
+                )
+            ]
+        )
+        logger.info("📦 加载数据集...")
+        dataset, dataloader = instantiate(args.dataloader)
+        logger.info(f"数据集大小: {len(dataset)} 张图片")
+    
+        logger.info("🏃 开始训练...")
+        trainer.fit(LitModel, train_dataloaders=dataloader)
+        logger.success("🎉 训练完成！")
+    
     # 采样
-
+    # logger.info("🔍 开始采样...")
+    # # 将模型移到 GPU（如果可用）
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # LitModel = LitModel.to(device)
+    # logger.info(f"使用设备: {device}")
+    # labels = torch.tensor([4,1,2,3], device=device)  # 4 张图片的标签
+    # ckpt_path = "ckpt_tinyimagenet/epoch_epoch=69.ckpt" 
+    # samples = LitModel.inference(labels, ckpt_path)
+    # save_image(samples, f"{args.inference.save_dir}/inferenced_imgs.png", nrow=2)
+    
+    # logger.info(f"🎉 采样完成，结果已保存至 {args.inference.save_dir}/inferenced_imgs.png")
+    
+    
 if __name__ == "__main__":
     main()
