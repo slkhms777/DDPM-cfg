@@ -12,8 +12,8 @@
 > 
 > | 分支 | 说明 |
 > |------|------|
-> | `v1` | 底层手搓实现（纯PyTorch，适合学习原理） |
-> | `v2` | 工程化实现（Lightning + Hydra + loguru，适合生产） |
+> | `v1` | 底层手搓实现（纯PyTorch） |
+> | `v2` | 工程化实现（Lightning + Hydra + loguru） |
 > 
 > **切换版本：**
 > ```bash
@@ -21,7 +21,7 @@
 > git checkout v1
 > 
 > # 切换回 v2 版本
-> git checkout v2
+> git checkout v2 # 也可以 git checkout main
 > 
 > # 查看所有分支
 > git branch -a
