@@ -51,18 +51,21 @@ uv sync
 3. **训练模型**
 
    ```bash
+   # 默认的config中配置了2块24G现存的gpu，请根据实际情况修改
    uv run main.py mode.train=true
    ```
 
 4. **采样生成**
 
    ```bash
+   # 推理模式使用 1*24G显存的gpu，默认采样batch=100张图像
    uv run main.py mode.train=false 
    ```
-   生成结果保存在 `sampled_images/` 目录下
+   生成结果保存在 `sampled_images/` 目录下。
 
    结果示例：
-   ![class_1_to_10](assets/class_1_to_10.png)
+
+   ![class_1_to_100](assets/class_1_to_100.png)
 
 ## 参考
 

@@ -154,20 +154,19 @@ def main(args: DictConfig) -> None:
         logger.info("🏃 开始训练...")
         trainer.fit(LitModel, train_dataloaders=dataloader)
         logger.success("🎉 训练完成！")
-    
-    # 采样
-    # logger.info("🔍 开始采样...")
-    # # 将模型移到 GPU（如果可用）
-    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    # LitModel = LitModel.to(device)
-    # logger.info(f"使用设备: {device}")
-    # labels = torch.tensor([4,1,2,3], device=device)  # 4 张图片的标签
-    # ckpt_path = "ckpt_tinyimagenet/epoch_epoch=69.ckpt" 
-    # samples = LitModel.inference(labels, ckpt_path)
-    # save_image(samples, f"{args.inference.save_dir}/inferenced_imgs.png", nrow=2)
-    
-    # logger.info(f"🎉 采样完成，结果已保存至 {args.inference.save_dir}/inferenced_imgs.png")
-    
+    else:
+        #  采样
+        logger.info("🔍 开始采样...")
+        # 将模型移到 GPU（如果可用）
+        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        LitModel = LitModel.to(device)
+        logger.info(f"使用设备: {device}")
+        labels = torch.arange(100, device=device)  # 4 张图片的标签
+        ckpt_path = "ckpt/ckpt_epoch_69.ckpt" 
+        samples = LitModel.inference(labels, ckpt_path)
+        save_image(samples, f"{args.inference.save_dir}/inferenced_imgs.png", nrow=10)
+        logger.info(f"🎉 采样完成，结果已保存至 {args.inference.save_dir}/inferenced_imgs.png")
+        
     
 if __name__ == "__main__":
     main()
