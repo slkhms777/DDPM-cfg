@@ -8,6 +8,25 @@
 - ✅ v1 版本（底层手搓实现）
 - ✅ v2 版本（Lightning、loguru、Hydra）
 
+> **版本切换说明**：本项目使用 Git 分支管理不同版本，当前默认分支为 `v2`。
+> 
+> | 分支 | 说明 |
+> |------|------|
+> | `v1` | 底层手搓实现（纯PyTorch，适合学习原理） |
+> | `v2` | 工程化实现（Lightning + Hydra + loguru，适合生产） |
+> 
+> **切换版本：**
+> ```bash
+> # 切换到 v1 版本
+> git checkout v1
+> 
+> # 切换回 v2 版本
+> git checkout v2
+> 
+> # 查看所有分支
+> git branch -a
+> ```
+
 待办：
 - ⬜ 其他质量更好的数据集
 
@@ -36,7 +55,7 @@ uv sync
 
 1. **准备数据集**
 
-   本项目使用 Mini-ImageNet（数据来源：[ModelScope](https://www.modelscope.cn)，大陆访问友好）
+   本项目使用 Mini-ImageNet（数据来源：[ModelScope](https://www.modelscope.cn/datasets/tany0699/mini_imagenet100)，大陆访问友好）
    
    ```bash
    bash fetch_data.sh
@@ -51,7 +70,7 @@ uv sync
 3. **训练模型**
 
    ```bash
-   # 默认的config中配置了2块24G现存的gpu，请根据实际情况修改
+   # 默认的config中配置针对2块24G显存的gpu，请根据实际情况修改config.train.gpus
    uv run main.py mode.train=true
    ```
 
